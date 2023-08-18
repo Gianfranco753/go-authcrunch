@@ -84,11 +84,14 @@ func (b *IdentityProvider) validateAccessToken(state string, data map[string]int
 		return nil, errors.ErrIdentityProviderOAuthInvalidToken.WithArgs(b.config.IdentityTokenName, tokenString)
 	}
 	claims := token.Claims.(jwtlib.MapClaims)
-	if _, exists := claims["nonce"]; !exists {
-		return nil, errors.ErrIdentityProviderOAuthNonceValidationFailed.WithArgs(b.config.IdentityTokenName, "nonce not found")
-	}
-	if err := b.state.validateNonce(state, claims["nonce"].(string)); err != nil {
-		return nil, errors.ErrIdentityProviderOAuthNonceValidationFailed.WithArgs(b.config.IdentityTokenName, err)
+
+	if !b.disableNonce {
+		if _, exists := claims["nonce"]; !exists {
+			return nil, errors.ErrIdentityProviderOAuthNonceValidationFailed.WithArgs(b.config.IdentityTokenName, "nonce not found")
+		}
+		if err := b.state.validateNonce(state, claims["nonce"].(string)); err != nil {
+			return nil, errors.ErrIdentityProviderOAuthNonceValidationFailed.WithArgs(b.config.IdentityTokenName, err)
+		}
 	}
 
 	if !b.disableEmailClaimCheck {
